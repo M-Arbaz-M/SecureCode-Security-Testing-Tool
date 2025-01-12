@@ -65,7 +65,7 @@ class UserModel:
             conn.commit()
             cur.close()
             conn.close()
-            st.success("Tables created successfully!")
+            st.success("")
         except Exception as e:
             st.error(f"Error creating tables: {e}")
 
