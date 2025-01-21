@@ -63,10 +63,16 @@ def update_issues_selected():
     st.session_state['show_resolve_button'] = st.session_state['issues_selected']
 
 
+def is_unique_title(user_id, title):
+    """Check if the title is unique for the user."""
+    existing_titles = [code[0]
+                       for code in user_model.get_recent_codes(user_id)]
+    return title not in existing_titles
+
+
 def show_recent_codes_on_main(user_id):
     """Display recent code submissions with search and date filters."""
-
-    with st.container(border=True):
+    with st.container():
         st.subheader("Recent Code Submissions")
 
         col1, col2, col3 = st.columns([0.5, 0.25, 0.25])
@@ -78,8 +84,13 @@ def show_recent_codes_on_main(user_id):
         with col3:
             end_date = st.date_input("End Date", value=None)
 
-    with st.container(border=True):
+    if start_date and end_date:
+        if start_date > end_date:
+            st.error(
+                "Start Date cannot be later than End Date. Please select valid dates.")
+            return  # Stop processing if invalid date range is detected.
 
+    with st.container():
         if start_date:
             start_date = datetime.combine(start_date, datetime.min.time())
         if end_date:
@@ -177,10 +188,17 @@ def main():
                 user_code = st_ace(language='python',
                                    theme='monokai', key="user_code")
 
+                # Validate title uniqueness
+                if title and not is_unique_title(user_id, title):
+                    st.error(
+                        "The title is already used. Please choose a different one.")
+
                 # Check if the vulnerability scan should be performed
-                if st.button("Check Vulnerabilities") or st.session_state['scan_complete'] is False:
-                    # Reset only if the user explicitly triggers a new scan
-                    if user_code and title:
+                if st.button("Check Vulnerabilities") and title and user_code:
+                    if not is_unique_title(user_id, title):
+                        st.error(
+                            "The title is already used. Please choose a different one.")
+                    else:
                         # Clear previous report
                         st.session_state['vulnerability_report'] = ""
                         # Reset selected issues
@@ -196,10 +214,8 @@ def main():
                             st.session_state['scan_complete'] = True
                             st.session_state['issue_resolved'] = False
 
-                            user_id = st.session_state.get('user_id')
-                            if user_id:
-                                user_model.save_code(
-                                    user_id, title, st.session_state['last_user_code'], None)
+                            user_model.save_code(
+                                user_id, title, st.session_state['last_user_code'], None)
 
                 # Display vulnerability report if available
                 if st.session_state['vulnerability_report']:
@@ -234,10 +250,8 @@ def main():
                         st.session_state['fixed_code'] = fixed_code
                         st.session_state['issue_resolved'] = True
 
-                        user_id = st.session_state.get('user_id')
-                        if user_id:
-                            user_model.save_code(
-                                user_id, title, st.session_state['last_user_code'], st.session_state['fixed_code'])
+                        user_model.save_code(
+                            user_id, title, st.session_state['last_user_code'], st.session_state['fixed_code'])
 
             if st.session_state['issue_resolved']:
                 vulnerability_free_code = VulnerabilityFreeCode(
