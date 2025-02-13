@@ -5,6 +5,7 @@ from streamlit_ace import st_ace
 from dotenv import load_dotenv
 from user_controller import UserController
 from vulnerability_service import VulnerabilityService
+from vulnerability_service import MalwareService
 from report_service import ReportService
 from user_model import UserModel
 from vulnerability_free_code import VulnerabilityFreeCode, rewrite_code_with_openai
